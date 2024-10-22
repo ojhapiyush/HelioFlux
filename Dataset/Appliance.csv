@@ -1,0 +1,6 @@
+Appliance_Rating,Load_Hours,Appliance_type
+200,1,Deferrable Loads
+500,2,Deferrable Loads
+300,3,Regulatable Load
+400,5,Deferrable Loads
+100,8,Regulatable Load
