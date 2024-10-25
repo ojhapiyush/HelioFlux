@@ -8,10 +8,10 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 
 # Define the model checkpoint callback
 checkpoint_callback = ModelCheckpoint(
-    filepath='model_epoch_{epoch:02d}.keras',  # Save with epoch number in the filename
-    save_freq='epoch',  # Saves based on epochs
-    save_weights_only=False,  # Save the full model (architecture + weights)
-    verbose=1  # Show message after each save
+    filepath='model_epoch_{epoch:02d}.keras',
+    save_freq='epoch',
+    save_weights_only=False,
+    verbose=1
 )
 
 # Custom callback for saving after every 5 epochs
@@ -20,16 +20,14 @@ class CustomSaveCallback(ModelCheckpoint):
         if (epoch + 1) % 5 == 0:
             super().on_epoch_end(epoch, logs)
 
-# Use the custom callback in model.fit()
 custom_checkpoint_callback = CustomSaveCallback(
-    filepath='model_epoch_{epoch:02d}.keras',  # Save with epoch number in the filename
-    save_weights_only=False,  # Save the full model
+    filepath='model_epoch_{epoch:02d}.keras',
+    save_weights_only=False,
     verbose=1
 )
 
-# Load the dataset
+# Loading the dataset
 df = pd.read_csv('..dataset/TOU_Tariffs_Dataset_5000.csv')
-
 df = df.drop(columns=['Tariff_ID', 'TOU_Period_Start', 'TOU_Period_End', 'Forecasted_Tariff_Rate', 'Renewable_Energy_Contribution (%)'], axis=1)
 
 # Preprocess the data
@@ -48,7 +46,6 @@ df[['Grid_Load (MW)', 'Tariff_Rate']] = scaler.fit_transform(df[['Grid_Load (MW)
 def create_sequences(data, n_steps_in, n_steps_out):
     X, y = [], []
     for i in range(len(data)):
-        # Find the end of the current sequence
         end_ix = i + n_steps_in
         out_end_ix = end_ix + n_steps_out
         
@@ -63,21 +60,20 @@ def create_sequences(data, n_steps_in, n_steps_out):
     return np.array(X), np.array(y)
 
 # Define input/output sequence lengths
-n_steps_in, n_steps_out = 48, 24  # Input 48 hours to predict the next 24
+n_steps_in, n_steps_out = 48, 24
 
 # Convert dataframe to numpy array
 dataset = df[['Weather_Conditions', 'Grid_Load (MW)', 'Tariff_Type', 'Tariff_Rate']].values
 
 # Create sequences
 X, y = create_sequences(dataset, n_steps_in, n_steps_out)
-
-# Reshape y to 3D
 y = y.reshape((y.shape[0], y.shape[1], 1))
 
-### 2. Building the LSTM Encoder-Decoder Model
-# Encoder-Decoder Model
 
-n_features = X.shape[2]  # Number of features per timestep
+### Building the LSTM Encoder-Decoder Model
+
+# Encoder-Decoder Model
+n_features = X.shape[2]
 
 # Encoder
 encoder_inputs = Input(shape=(n_steps_in, n_features))

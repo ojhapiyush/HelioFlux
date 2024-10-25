@@ -16,9 +16,9 @@ class DeepQLearningAgent:
     def __init__(self, state_size, action_size):
         self.state_size = state_size
         self.action_size = action_size
-        self.memory = deque(maxlen=2000)  # Replay memory
-        self.gamma = 0.95  # Discount rate
-        self.epsilon = 1.0  # Exploration rate
+        self.memory = deque(maxlen=2000) 
+        self.gamma = 0.95
+        self.epsilon = 1.0
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.001
@@ -42,7 +42,9 @@ class DeepQLearningAgent:
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         act_values = self.model.predict(state)
-        return np.argmax(act_values[0])  # Returns action with the highest Q-value
+        
+        # Returning the highest Q-Value
+        return np.argmax(act_values[0])
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
@@ -66,6 +68,7 @@ class DeepQLearningAgent:
 
 # Function to preprocess data and create sequences for prediction
 def preprocess_data_for_prediction(df, n_steps_in, n_steps_out):
+    
     # Encode categorical data and scale numerical values
     encoder_weather = LabelEncoder()
     df['Weather_Conditions'] = encoder_weather.fit_transform(df['Weather_Conditions'])
@@ -74,7 +77,7 @@ def preprocess_data_for_prediction(df, n_steps_in, n_steps_out):
     scaler = MinMaxScaler()
     df[['Grid_Load (MW)', 'Tariff_Rate']] = scaler.fit_transform(df[['Grid_Load (MW)', 'Tariff_Rate']])
 
-    # Convert to numpy array and create sequences
+    # Converting to numpy array and create sequences for fast processing
     dataset = df[['Weather_Conditions', 'Grid_Load (MW)', 'Tariff_Type', 'Tariff_Rate']].values
     X, y = [], []
     for i in range(len(dataset) - n_steps_in - n_steps_out):
@@ -83,28 +86,25 @@ def preprocess_data_for_prediction(df, n_steps_in, n_steps_out):
 
     return np.array(X), np.array(y)
 
-# Load and preprocess the dataset
-# pd.options.display.progress = False
+# Loading and preprocessing the dataset
 df = pd.read_csv('../dataset/TOU_Tariffs_Dataset_5000.csv')
 df = df.drop(columns=['Tariff_ID', 'TOU_Period_Start', 'TOU_Period_End', 'Forecasted_Tariff_Rate', 'Renewable_Energy_Contribution (%)'], axis=1)
 
-# Define sequence lengths
+# Defining sequence lengths
 n_steps_in, n_steps_out = 48, 24
 
-# Prepare data for training and testing
+# Preparing data for training and testing
 X, y = preprocess_data_for_prediction(df, n_steps_in, n_steps_out)
 
-# Split the data into training and testing sets
+# Split the data into training and testing sets Reshape y_train and y_test for LSTM model compatibility
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Reshape y_train and y_test for LSTM model compatibility
 y_train = y_train.reshape((y_train.shape[0], y_train.shape[1], 1))
 y_test = y_test.reshape((y_test.shape[0], y_test.shape[1], 1))
 
 # Training the Deep Q-Learning agent
 agent = DeepQLearningAgent(state_size=(n_steps_in, X.shape[2]), action_size=n_steps_out)
 
-# Number of episodes for training
+# Defining the hyperparameters
 episodes = 50
 batch_size = 32
 
@@ -116,7 +116,7 @@ for e in range(episodes):
     for t in range(n_steps_out):
         action = agent.act(state)
         next_state = X_train[np.random.randint(0, X_train.shape[0] - 1)].reshape(1, n_steps_in, X.shape[2])
-        reward = -y_train[idx, action, 0]  # Negative tariff rate to minimize the cost
+        reward = -y_train[idx, action, 0] 
         done = t == n_steps_out - 1
         agent.remember(state, action, reward, next_state, done)
         state = next_state
@@ -132,7 +132,7 @@ for e in range(episodes):
         agent.replay(batch_size)
         
         
-# Prediction function
+# Predicting the tariff
 def predict_next_24_hours(agent, X_test):
     predictions = []
     for i in range(X_test.shape[0]):
